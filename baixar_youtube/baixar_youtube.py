@@ -1,5 +1,4 @@
-from pytube import YouTube, Playlist
-from pytube.cli import on_progress
+from pytube import YouTube, Playlist, exceptions as PytubeExceptions
 import os
 
 class ExceptionNotFoundMethod(Exception):
@@ -9,17 +8,33 @@ class Baixar_Youtube:
 	def __init__(self, url, destination, method):
 		self.url = url
 		self.destination = destination
+		self.method = method
+		
+
+		self._video = None
+		self._playlist = None
 
 		self.methods = {
-			"mp3": self.download_mp3, 
-			"mp4": self.download_mp4, 
-			"playlist": self.download_playlist}
+			"mp3": self.mp3, 
+			"mp4": self.mp4, 
+			"playlist": self.playlist}
 		
 		if method in self.methods:
 			metodo = self.methods[method]
 			self.resultado = metodo()
 		else:
 			raise ExceptionNotFoundMethod("Método não encontrado!")
+		
+	@property
+	def title(self):
+		if self.method == "mp3" or self.method == "mp4":
+			return self._video.title
+		return self._playlist.title
+	
+	@property
+	def thumbnail(self):
+		if self.method == "mp3" or self.method == "mp4":
+			return self._video.thumbnail_url
 
 	def transform_mp3(self, downloaded_file):
 		base, ext = os.path.splitext(downloaded_file)
@@ -27,52 +42,78 @@ class Baixar_Youtube:
 		os.rename(downloaded_file, new_file)		
 		return new_file.split('/')[-1]
 	
-	def download_mp3(self):
+	def mp3(self):
 		try:
-			video = YouTube(self.url, on_progress_callback=on_progress).streams.filter(only_audio=True).first()
-			
-			print(f"Download Iniciado: {video.title}")
+			self._video = YouTube(self.url)
+		
+		except PytubeExceptions.RegexMatchError:
+			raise Exception(f"Erro no formato da URL:\n{self.url}")
+		
+		except PytubeExceptions.ExtractError:
+			raise Exception(f"Um erro de Extração ocorreu com o vídeo:\n{self.url}")
+		
+		except PytubeExceptions.VideoUnavailable:
+			raise Exception(f"O Vídeo está indisponível:\n{self.url}")
+		
+		except Exception as e:
+			raise Exception(e)
+					
+	def mp4(self):
+		try:
+			self._video = YouTube(self.url)
 
-			downloaded_file = video.download(self.destination)
-			video_title = self.transform_mp3(downloaded_file)
+		except PytubeExceptions.RegexMatchError:
+			raise Exception(f"Erro no formato da URL:\n{self.url}")
+		
+		except PytubeExceptions.ExtractError:
+			raise Exception(f"Um erro de Extração ocorreu com o vídeo:\n{self.url}")
+		
+		except PytubeExceptions.VideoUnavailable:
+			raise Exception(f"O Vídeo está indisponível:\n{self.url}")
+		
+		except Exception as e:
+			raise Exception(e)
+		
 			
+	def playlist(self):
+		try:
+			self._playlist = Playlist(self.url)
+		except Exception as e:
+			raise Exception(e)
+		
+		except KeyboardInterrupt:
+			print("\nSaindo...")
+
+	def download(self):
+		if self.method == "mp3":
+			print(f"Download Iniciado: {self.title}")
+
+			downloaded_file = self._video.streams.filter(only_audio=True).first().download(self.destination)
+			video_title = self.transform_mp3(downloaded_file)
 
 			print(f"Baixado {video_title} com sucesso em {self.destination}") 
-		except Exception as e:
-			print("Ocorreu algum erro:", e)
-		else:
-			print("\n====== Done - Check Download Dir =======")
-					
-	def download_mp4(self):
-		try:
-			video = YouTube(self.url, on_progress_callback=on_progress).streams.get_highest_resolution()
+		
+		elif self.method == "mp4":
+			video = self._video.streams.get_highest_resolution()
 			video.download(self.destination)
 			
-			print(f"Baixado {video.title} com sucesso em {self.destination}") 
-		except Exception as e:
-			print("Ocorreu algum erro:", e)
-		else:
-			print("\n====== Done - Check Download Dir =======")
-			
-	def download_playlist(self):
-		try:
-			playlist = Playlist(self.url)
-			print(f"Playlist: {playlist.title}")
+			print(f"Baixado {self._video.title} com sucesso em {self.destination}") 
 
-			for idx, video in enumerate(playlist.videos):
-				video.register_on_progress_callback(on_progress)
-				stream = video.streams.filter(only_audio=True).first()
+		elif self.method == "playlist":
+			for idx, video in enumerate(self._playlist.videos):
+				self._video = video.streams.filter(only_audio=True).first()
 
-				print(f"[{idx + 1}|{len(playlist.videos) + 1} VIDEO] {stream.title}")
-				download_file = stream.download(self.destination)
+				print(f"[{idx + 1}|{len(self._playlist.videos) + 1} VIDEO] {self._video.title}")
+				download_file = self._video.download(self.destination)
 
 				video_title = self.transform_mp3(download_file)
 				print(f"Baixado {video_title} com sucesso em {self.destination}") 
 
-		except Exception as e:
-			print("Ocorreu algum erro:", e)	
-			
-		except KeyboardInterrupt:
-			print("\nSaindo...")
-		else:
-			print(f"finalizado")
+
+# import os
+
+# url = input("Digite uma URL: ")
+
+# video = Baixar_Youtube(url, os.getcwd(), "playlist")
+# print(video.title)
+# print(video.thumbnail)
