@@ -61,15 +61,7 @@ class APP_GUI(customtkinter.CTk):
         
         self.progress_bar.set(float(percentage_of_completion) / 100)
 
-    def reset_configs(self):
-        #reseta barra de progresso
-        self.progress_bar.set(0)
-        self.text_progress_bar.configure(text="0%")
-        self.after(2000)
-
     def command_download(self):
-        self.reset_configs()
-        
         entry_text, option_selected = self.entry_bar.get(), self.variable.get()
 
         if len(entry_text) > 0 and option_selected != "playlist":
