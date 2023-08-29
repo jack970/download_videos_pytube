@@ -69,53 +69,52 @@ class APP_GUI(customtkinter.CTk):
         if len(entry_text) > 0:
             try:
                 video = Baixar_Youtube(entry_text, os.getcwd(), option_selected) # substituir os.getcwd() para PATH_DOWNLOADS
-                self.load_info_video(video, option_selected)
 
                 if option_selected != "playlist":
                     self.download_thread_video(video)
+
                 else:
-                    self.download_thread_playlist(video._playlist, video.transform_mp3)
+                    self.download_thread_playlist(video)
 
             except Exception as e:
                 self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
 
     def download_thread_video(self, video):
-        video._video.register_on_progress_callback(self.on_progress)
-        threading.Thread(target=video.download).start()
+        threading.Thread(target=self.download_video, args=(video,)).start()
 
-    def download_thread_playlist(self, playlist, transform_mp3):
-        threading.Thread(target=self.download_video_playlist, args=(playlist, transform_mp3)).start()
+    def download_thread_playlist(self, playlist):
+        threading.Thread(target=self.download_video_playlist, args=(playlist,)).start()
 
     def download_video(self, video):
+        video._video.register_on_progress_callback(self.on_progress)
         self.title_video.configure(text=video.title, text_color="white")
 
         video_thumbnail = self.load_thumbnail(video.thumbnail)
         self.image_video.configure(image=video_thumbnail)
 
-    def download_video_playlist(self, playlist, transform_mp3):
-        self.title_video.configure(text=playlist.title, text_color="white")
+        video.download()
 
-        for idx, video in enumerate(playlist.videos):
-            self.descrition_video.configure(text=f"[ {idx + 1} de {len(playlist.videos) + 1} ]\n{video.title}")
-            video_thumbnail = self.load_thumbnail(video.thumbnail_url)
-            self.image_video.configure(image=video_thumbnail)
-            
-            video.register_on_progress_callback(self.on_progress)
-            video = video.streams.filter(only_audio=True).first()
+    def download_video_playlist(self, playlist):
+        try:
+            self.title_video.configure(text=playlist.title, text_color="white")
 
-            download_file = video.download(os.getcwd())
-            transform_mp3(download_file)
+            videos = playlist._playlist.videos
+            for idx, video in enumerate(videos):
+                self.text_progress_bar.configure(text="0%")
+                self.progress_bar.set(0)
 
-            self.text_progress_bar.configure(text="0%")
-            self.progress_bar.set(0)
+                self.descrition_video.configure(text=f"[ {idx + 1} de {len(videos) + 1} ]\n{video.title}")
+                video_thumbnail = self.load_thumbnail(video.thumbnail_url)
+                self.image_video.configure(image=video_thumbnail)
+                
+                video.register_on_progress_callback(self.on_progress)
+                video = video.streams.filter(only_audio=True).first()
 
-    def load_info_video(self, video, option):
-        self.title_video.configure(text=video.title, text_color="white")
+                download_file = video.download(os.getcwd())
+                playlist.transform_mp3(download_file)
 
-        if option != "playlist":
-            video_thumbnail = self.load_thumbnail(video.thumbnail)
-            self.image_video.configure(image=video_thumbnail)
-
+        except Exception as e:
+            self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
 
 app = APP_GUI()
 app.mainloop()

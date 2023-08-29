@@ -26,9 +26,14 @@ class Baixar_Youtube:
 		
 	@property
 	def title(self):
-		if self.method == "mp3" or self.method == "mp4":
-			return self._video.title
-		return self._playlist.title
+		try:
+			if self.method == "mp3" or self.method == "mp4":
+				return self._video.title
+			
+			return self._playlist.title
+		
+		except Exception as e:
+			raise Exception(f"Ocorreu um erro {e}")
 	
 	@property
 	def thumbnail(self):
@@ -77,11 +82,9 @@ class Baixar_Youtube:
 	def playlist(self):
 		try:
 			self._playlist = Playlist(self.url)
+
 		except Exception as e:
-			raise Exception(e)
-		
-		except KeyboardInterrupt:
-			print("\nSaindo...")
+			raise Exception(f'Ocorreu um erro {e}')
 
 	def download(self):
 		if self.method == "mp3":
@@ -103,6 +106,5 @@ class Baixar_Youtube:
 
 # url = input("Digite uma URL: ")
 
-# video = Baixar_Youtube(url, os.getcwd(), "playlist")
+# video = Baixar_Youtube(url, os.getcwd(), "mp3")
 # print(video.title)
-# print(video.thumbnail)
