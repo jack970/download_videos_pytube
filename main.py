@@ -1,5 +1,5 @@
 from PIL import Image
-import customtkinter, time, os, requests, io, threading
+import customtkinter, os, requests, io, threading
 from baixar_youtube import Baixar_Youtube
 
 PATH_DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -33,16 +33,18 @@ class APP_GUI(customtkinter.CTk):
         self.title_video = customtkinter.CTkLabel(self, text="")
         self.title_video.grid(row=5, columnspan=4)
 
+        self.descrition_video = customtkinter.CTkLabel(self, text="")
+        self.descrition_video.grid(row=6, columnspan=4)
 
         self.text_progress_bar = customtkinter.CTkLabel(self, text='0%')
-        self.text_progress_bar.grid(row=6, columnspan=4, pady=0, padx=20, sticky='n')
+        self.text_progress_bar.grid(row=7, columnspan=4, pady=0, padx=20, sticky='n')
 
         self.progress_bar = customtkinter.CTkProgressBar(master=self, orientation='horizontal', mode='determinate')
-        self.progress_bar.grid(row=7, columnspan=4, pady=10, padx=20, sticky="sew")
+        self.progress_bar.grid(row=8, columnspan=4, pady=10, padx=20, sticky="sew")
         self.progress_bar.set(0)
 
         self.button_download = customtkinter.CTkButton(self, text="Baixar | Fazer Download", command=self.command_download)
-        self.button_download.grid(row=8, columnspan=4, padx=10, pady=10, sticky="sew")
+        self.button_download.grid(row=9, columnspan=4, padx=10, pady=10, sticky="sew")
 
     def load_thumbnail(self, url):
         u = requests.get(url)
@@ -64,26 +66,55 @@ class APP_GUI(customtkinter.CTk):
     def command_download(self):
         entry_text, option_selected = self.entry_bar.get(), self.variable.get()
 
-        if len(entry_text) > 0 and option_selected != "playlist":
-            print(f"texto: {entry_text}, option: {option_selected}")
-
+        if len(entry_text) > 0:
             try:
                 video = Baixar_Youtube(entry_text, os.getcwd(), option_selected) # substituir os.getcwd() para PATH_DOWNLOADS
-                self.load_info_video(video)
-                self.download_thread(video)
+                self.load_info_video(video, option_selected)
+
+                if option_selected != "playlist":
+                    self.download_thread_video(video)
+                else:
+                    self.download_thread_playlist(video._playlist, video.transform_mp3)
 
             except Exception as e:
                 self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
 
-    def download_thread(self, video):
+    def download_thread_video(self, video):
         video._video.register_on_progress_callback(self.on_progress)
         threading.Thread(target=video.download).start()
 
-    def load_info_video(self, video):
+    def download_thread_playlist(self, playlist, transform_mp3):
+        threading.Thread(target=self.download_video_playlist, args=(playlist, transform_mp3)).start()
+
+    def download_video(self, video):
         self.title_video.configure(text=video.title, text_color="white")
 
         video_thumbnail = self.load_thumbnail(video.thumbnail)
         self.image_video.configure(image=video_thumbnail)
+
+    def download_video_playlist(self, playlist, transform_mp3):
+        self.title_video.configure(text=playlist.title, text_color="white")
+
+        for idx, video in enumerate(playlist.videos):
+            self.descrition_video.configure(text=f"[ {idx + 1} de {len(playlist.videos) + 1} ]\n{video.title}")
+            video_thumbnail = self.load_thumbnail(video.thumbnail_url)
+            self.image_video.configure(image=video_thumbnail)
+            
+            video.register_on_progress_callback(self.on_progress)
+            video = video.streams.filter(only_audio=True).first()
+
+            download_file = video.download(os.getcwd())
+            transform_mp3(download_file)
+
+            self.text_progress_bar.configure(text="0%")
+            self.progress_bar.set(0)
+
+    def load_info_video(self, video, option):
+        self.title_video.configure(text=video.title, text_color="white")
+
+        if option != "playlist":
+            video_thumbnail = self.load_thumbnail(video.thumbnail)
+            self.image_video.configure(image=video_thumbnail)
 
 
 app = APP_GUI()

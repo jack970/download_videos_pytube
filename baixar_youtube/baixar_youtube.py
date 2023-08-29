@@ -9,7 +9,6 @@ class Baixar_Youtube:
 		self.url = url
 		self.destination = destination
 		self.method = method
-		
 
 		self._video = None
 		self._playlist = None
@@ -98,16 +97,6 @@ class Baixar_Youtube:
 			video.download(self.destination)
 			
 			print(f"Baixado {self._video.title} com sucesso em {self.destination}") 
-
-		elif self.method == "playlist":
-			for idx, video in enumerate(self._playlist.videos):
-				self._video = video.streams.filter(only_audio=True).first()
-
-				print(f"[{idx + 1}|{len(self._playlist.videos) + 1} VIDEO] {self._video.title}")
-				download_file = self._video.download(self.destination)
-
-				video_title = self.transform_mp3(download_file)
-				print(f"Baixado {video_title} com sucesso em {self.destination}") 
 
 
 # import os
