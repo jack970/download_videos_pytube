@@ -9,6 +9,7 @@ class APP_GUI(customtkinter.CTk):
 
     def __init__(self):
         super().__init__()
+        self.resizable(width=False,height=False)
         self.geometry("400x480")
         self.title("Youtube Downloader")
 
@@ -16,19 +17,22 @@ class APP_GUI(customtkinter.CTk):
         self.path_download = self.PATH_DOWNLOADS
 
         self.grid_columnconfigure(3, weight=1)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(6, weight=1)
 
         self.options = ["MP3", "MP4", "Playlist"]
 
-        self.entry_bar_url = customtkinter.CTkEntry(self, width=200)
-        self.entry_bar_url.grid(row=1, columnspan=4, padx=10, pady=10, stick="ew")
+        self.label_bar_url = customtkinter.CTkLabel(self, text="URL:", width=2)
+        self.label_bar_url.grid(row=1, column=1, padx=10, sticky="w")
+
+        self.entry_bar_url = customtkinter.CTkEntry(self, width=350)
+        self.entry_bar_url.grid(row=1, columnspan=4, padx=10, pady=10, stick="e")
 
         self.variable_path_download = customtkinter.StringVar(value=self.path_download)
         self.entry_path_download = customtkinter.CTkEntry(self, width=200, textvariable=self.variable_path_download, state="disabled")
-        self.entry_path_download.grid(row=2, columnspan=3, padx=10, pady=10, stick="ew")
+        self.entry_path_download.grid(row=2, columnspan=3, padx=10, pady=10, stick="new")
 
         self.button_save_path_download = customtkinter.CTkButton(self, text="Salvar Pasta", command=self.open_directory_save)
-        self.button_save_path_download.grid(row=2, column=3, padx=10, pady=10, sticky="e")
+        self.button_save_path_download.grid(row=2, column=3, padx=10, pady=10, sticky="ne")
 
         self.grid_columnconfigure(1, weight=1)
 
@@ -36,7 +40,7 @@ class APP_GUI(customtkinter.CTk):
 
         for idx, item in enumerate(self.options):
             self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=item, value=item.lower(), variable=self.variable)
-            self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0))
+            self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0), sticky="n")
         
         self.image_video = customtkinter.CTkLabel(self, text="", image=self.logo_image)
         self.image_video.grid(row=4, columnspan=4)
