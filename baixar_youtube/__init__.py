@@ -1,1 +1,1 @@
-from .baixar_youtube import Baixar_Youtube
+from .__main__ import Baixar_Youtube
