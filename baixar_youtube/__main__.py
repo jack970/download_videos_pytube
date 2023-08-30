@@ -14,8 +14,8 @@ class Baixar_Youtube:
 		self._playlist = None
 
 		self.methods = {
-			"mp3": self.mp3, 
-			"mp4": self.mp4, 
+			"mp3": self.mp3_mp4, 
+			"mp4": self.mp3_mp4, 
 			"playlist": self.playlist}
 		
 		if method in self.methods:
@@ -27,17 +27,18 @@ class Baixar_Youtube:
 	@property
 	def title(self):
 		try:
-			if self.method == "mp3" or self.method == "mp4":
+			if self._video:
 				return self._video.title
-			
-			return self._playlist.title
+					
+			elif self._playlist:
+				return self._playlist.title
 		
 		except Exception as e:
 			raise Exception(f"Ocorreu um erro {e}")
 	
 	@property
 	def thumbnail(self):
-		if self.method == "mp3" or self.method == "mp4":
+		if self._video:
 			return self._video.thumbnail_url
 
 	def transform_mp3(self, downloaded_file):
@@ -46,7 +47,7 @@ class Baixar_Youtube:
 		os.rename(downloaded_file, new_file)		
 		return new_file.split('/')[-1]
 	
-	def mp3(self):
+	def mp3_mp4(self):
 		try:
 			self._video = YouTube(self.url)
 		
@@ -61,23 +62,6 @@ class Baixar_Youtube:
 		
 		except Exception as e:
 			raise Exception(e)
-					
-	def mp4(self):
-		try:
-			self._video = YouTube(self.url)
-
-		except PytubeExceptions.RegexMatchError:
-			raise Exception(f"Erro no formato da URL:\n{self.url}")
-		
-		except PytubeExceptions.ExtractError:
-			raise Exception(f"Um erro de Extração ocorreu com o vídeo:\n{self.url}")
-		
-		except PytubeExceptions.VideoUnavailable:
-			raise Exception(f"O Vídeo está indisponível:\n{self.url}")
-		
-		except Exception as e:
-			raise Exception(e)
-		
 			
 	def playlist(self):
 		try:
@@ -87,19 +71,23 @@ class Baixar_Youtube:
 			raise Exception(f'Ocorreu um erro {e}')
 
 	def download(self):
-		if self.method == "mp3":
-			print(f"Download Iniciado: {self.title}")
+		if self._video:
+			if self.method == "mp3":
+				print(f"Download Iniciado: {self.title}")
 
-			downloaded_file = self._video.streams.filter(only_audio=True).first().download(self.destination)
-			video_title = self.transform_mp3(downloaded_file)
+				video = self._video.streams.filter(only_audio=True).first()
 
-			print(f"Baixado {video_title} com sucesso em {self.destination}") 
-		
-		elif self.method == "mp4":
-			video = self._video.streams.get_highest_resolution()
-			video.download(self.destination)
+				if video:
+					video_downloaded = video.download(self.destination)
+					video_title = self.transform_mp3(video_downloaded)
+					print(f"Baixado {video_title} com sucesso em {self.destination}") 
 			
-			print(f"Baixado {self._video.title} com sucesso em {self.destination}") 
+			elif self.method == "mp4":
+				video = self._video.streams.get_highest_resolution()
+
+				if video:
+					video.download(self.destination)
+					print(f"Baixado {self._video.title} com sucesso em {self.destination}") 
 
 
 # import os

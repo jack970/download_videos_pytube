@@ -1,10 +1,7 @@
 from PIL import Image
-import customtkinter, os, requests, io, threading, tkinter.filedialog as tk_filedialog
+import customtkinter, os, threading, tkinter.filedialog as tk_filedialog
 from baixar_youtube import Baixar_Youtube
-from resource_path import resourcePath
-
-LOGO = resourcePath("logo.png")
-ICON = resourcePath("logo.ico")
+from functions import LOGO, ICON, loadThumbnail
 
 class App(customtkinter.CTk):
     customtkinter.set_appearance_mode("Dark")
@@ -73,11 +70,6 @@ class App(customtkinter.CTk):
 
         if not directory:
             self.variable_path_download.set(value=self.path_download)
-        
-    def load_thumbnail(self, url):
-        u = requests.get(url)
-        image_open = Image.open(io.BytesIO(u.content))
-        return customtkinter.CTkImage(image_open, size=(200, 200))
     
     def on_progress(self, stream=None, chunk=None, bytes_remaining=None):
         total_size = stream.filesize
@@ -110,19 +102,35 @@ class App(customtkinter.CTk):
             self.title_video.configure(text=f"Insira uma URL!", text_color="red", font=('Helvatical bold',20))
 
     def download_thread_video(self, video):
-        threading.Thread(target=self.download_video, args=(video,)).start()
+        self.button_download.configure(state="disabled")
+
+        self.thread = threading.Thread(target=self.download_video, args=(video,))
+        self.thread.start()
+
+        self.after(100, self.check_thread) 
 
     def download_thread_playlist(self, playlist):
-        playlist_threading = threading.Thread(target=self.download_video_playlist, args=(playlist,))
-        playlist_threading.start()
+        self.button_download.configure(state="disabled")
 
-        if not playlist_threading.is_alive(): print("Download finalizado!")
+        self.thread = threading.Thread(target=self.download_video_playlist, args=(playlist,))
+        self.thread.start()
+
+        self.after(100, self.check_thread) 
+
+    def check_thread(self):
+        if self.thread.is_alive():
+            self.button_download.configure(text="Baixando...")
+            self.after(100, self.check_thread)  # Check again after 100ms
+        else:
+            self.descrition_video.configure(text="Download Concluído!")
+            self.button_download.configure(text="Baixar | Fazer Download")
+            self.button_download.configure(state="normal")  
 
     def download_video(self, video):
         video._video.register_on_progress_callback(self.on_progress)
         self.title_video.configure(text=video.title, text_color="white")
 
-        video_thumbnail = self.load_thumbnail(video.thumbnail)
+        video_thumbnail = loadThumbnail(video.thumbnail)
         self.image_video.configure(image=video_thumbnail)
 
         video.download()
@@ -139,7 +147,7 @@ class App(customtkinter.CTk):
                 self.progress_bar.set(0)
 
                 self.descrition_video.configure(text=f"[ {idx + 1} de {len(videos) + 1} ]\n{video.title}")
-                video_thumbnail = self.load_thumbnail(video.thumbnail_url)
+                video_thumbnail = loadThumbnail(video.thumbnail_url)
                 self.image_video.configure(image=video_thumbnail)
                 
                 video.register_on_progress_callback(self.on_progress)
