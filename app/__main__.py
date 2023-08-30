@@ -72,16 +72,17 @@ class App(customtkinter.CTk):
             self.variable_path_download.set(value=self.path_download)
     
     def on_progress(self, stream=None, chunk=None, bytes_remaining=None):
-        total_size = stream.filesize
-        bytes_downloaded = total_size - bytes_remaining
+        if stream:
+            total_size = stream.filesize
+            bytes_downloaded = total_size - bytes_remaining
 
-        percentage_of_completion = bytes_downloaded / total_size * 100
-        per = str(int(percentage_of_completion))
-        
-        self.text_progress_bar.configure(text=per + '%')
-        self.text_progress_bar.update()
-        
-        self.progress_bar.set(float(percentage_of_completion) / 100)
+            percentage_of_completion = bytes_downloaded / total_size * 100
+            per = str(int(percentage_of_completion))
+            
+            self.text_progress_bar.configure(text=per + '%')
+            self.text_progress_bar.update()
+            
+            self.progress_bar.set(float(percentage_of_completion) / 100)
 
     def command_download(self):
         entry_text, option_selected, path_download = self.entry_bar_url.get(), self.option_selected.get(), self.entry_path_download.get()
