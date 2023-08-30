@@ -42,10 +42,10 @@ class App(customtkinter.CTk):
 
         self.grid_columnconfigure(1, weight=1)
 
-        self.variable = customtkinter.StringVar(value="mp4")
+        self.option_selected = customtkinter.StringVar(value="mp4")
 
         for idx, item in enumerate(self.options):
-            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=item, value=item.lower(), variable=self.variable)
+            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=item, value=item.lower(), variable=self.option_selected)
             self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0), sticky="n")
         
         self.image_video = customtkinter.CTkLabel(self, text="", image=self.logo_image)
@@ -67,14 +67,13 @@ class App(customtkinter.CTk):
         self.button_download = customtkinter.CTkButton(self, text="Baixar | Fazer Download", command=self.command_download)
         self.button_download.grid(row=9, columnspan=4, padx=10, pady=10, sticky="sew")
     
-
     def open_directory_save(self):
         directory = tk_filedialog.askdirectory(initialdir=self.path_download, mustexist=True)
         self.variable_path_download.set(value=directory)
+
         if not directory:
             self.variable_path_download.set(value=self.path_download)
         
-    
     def load_thumbnail(self, url):
         u = requests.get(url)
         image_open = Image.open(io.BytesIO(u.content))
@@ -93,7 +92,7 @@ class App(customtkinter.CTk):
         self.progress_bar.set(float(percentage_of_completion) / 100)
 
     def command_download(self):
-        entry_text, option_selected, path_download = self.entry_bar_url.get(), self.variable.get(), self.entry_path_download.get()
+        entry_text, option_selected, path_download = self.entry_bar_url.get(), self.option_selected.get(), self.entry_path_download.get()
 
         if len(entry_text) > 0:
             try:
@@ -114,7 +113,10 @@ class App(customtkinter.CTk):
         threading.Thread(target=self.download_video, args=(video,)).start()
 
     def download_thread_playlist(self, playlist):
-        threading.Thread(target=self.download_video_playlist, args=(playlist,)).start()
+        playlist_threading = threading.Thread(target=self.download_video_playlist, args=(playlist,))
+        playlist_threading.start()
+
+        if not playlist_threading.is_alive(): print("Download finalizado!")
 
     def download_video(self, video):
         video._video.register_on_progress_callback(self.on_progress)
