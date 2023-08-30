@@ -1,16 +1,10 @@
 from PIL import Image
-import customtkinter, os, sys, requests, io, threading, tkinter.filedialog as tk_filedialog
+import customtkinter, os, requests, io, threading, tkinter.filedialog as tk_filedialog
 from baixar_youtube import Baixar_Youtube
+from resource_path import resourcePath
 
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
-
-LOGO = resource_path("assets/logo.png")
-ICON = resource_path("assets/logo.ico")
-
+LOGO = resourcePath("logo.png")
+ICON = resourcePath("logo.ico")
 
 class App(customtkinter.CTk):
     LOGO_IMAGE = customtkinter.CTkImage(Image.open(LOGO), size=(200, 200))
