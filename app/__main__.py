@@ -7,6 +7,8 @@ LOGO = resourcePath("logo.png")
 ICON = resourcePath("logo.ico")
 
 class App(customtkinter.CTk):
+    customtkinter.set_appearance_mode("Dark")
+
     LOGO_IMAGE = customtkinter.CTkImage(Image.open(LOGO), size=(200, 200))
     PATH_DOWNLOADS = os.path.join(os.path.expanduser("~"), "Downloads")
 
@@ -14,7 +16,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.resizable(width=False, height=False)
         self.iconbitmap(ICON)
-        self.geometry("400x480")
+        self.geometry("400x550")
         self.title("Youtube Downloader")
 
         self.logo_image = self.LOGO_IMAGE
@@ -47,7 +49,7 @@ class App(customtkinter.CTk):
             self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0), sticky="n")
         
         self.image_video = customtkinter.CTkLabel(self, text="", image=self.logo_image)
-        self.image_video.grid(row=4, columnspan=4)
+        self.image_video.grid(row=4, columnspan=4, pady=30, sticky="nsew")
 
         self.title_video = customtkinter.CTkLabel(self, text="")
         self.title_video.grid(row=5, columnspan=4)
