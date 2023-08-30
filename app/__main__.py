@@ -124,6 +124,8 @@ class App(customtkinter.CTk):
         video.download()
 
     def download_video_playlist(self, playlist):
+        path_download = self.entry_path_download.get()
+
         try:
             self.title_video.configure(text=playlist.title, text_color="white")
 
@@ -139,7 +141,7 @@ class App(customtkinter.CTk):
                 video.register_on_progress_callback(self.on_progress)
                 video = video.streams.filter(only_audio=True).first()
 
-                download_file = video.download(os.getcwd())
+                download_file = video.download(path_download)
                 playlist.transform_mp3(download_file)
 
         except Exception as e:
