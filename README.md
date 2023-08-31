@@ -1,8 +1,8 @@
 <h1 align="center">Youtube Downloader</h1>
 
-## Visão Geral
+## 👁️‍🗨️ Visão Geral
 
-Está é a primeira versão do programa executável Youtube Downloader. Este Programa realiza o download de vídeos a partir de links do Youtube.
+O programa desenvolvido em Python oferece uma solução abrangente para o download de vídeos, playlists e músicas do YouTube onde é possível selecionar a pasta de download.
 
 ---
 
@@ -23,7 +23,7 @@ Está é a primeira versão do programa executável Youtube Downloader. Este Pro
 - Pillow
 - pyinstaller
 
-### Detalhes da Versão
+### 🚀 Detalhes da Versão
 
 - **Nome da Versão:** YouTube Downloader v1.1.0
 - **Data da Release:** 29 de Agosto de 2023
