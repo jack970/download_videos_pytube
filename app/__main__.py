@@ -22,7 +22,6 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(3, weight=1)
         self.grid_rowconfigure(6, weight=1)
 
-        self.options = ["MP3", "MP4", "Playlist"]
 
         self.label_bar_url = customtkinter.CTkLabel(self, text="URL:", width=2)
         self.label_bar_url.grid(row=1, column=1, padx=10, sticky="w")
@@ -39,10 +38,11 @@ class App(customtkinter.CTk):
 
         self.grid_columnconfigure(1, weight=1)
 
-        self.option_selected = customtkinter.StringVar(value="mp4")
+        self.options = {"MP3": "mp3", "MP4": "mp4", "Playlist": "playlist"}
 
-        for idx, item in enumerate(self.options):
-            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=item, value=item.lower(), variable=self.option_selected)
+        self.option_selected = customtkinter.StringVar(value="mp4")
+        for idx, (key, value)  in enumerate(self.options.items()):
+            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=key, value=value, variable=self.option_selected)
             self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0), sticky="n")
         
         self.image_video = customtkinter.CTkLabel(self, text="", image=self.logo_image)
@@ -73,72 +73,119 @@ class App(customtkinter.CTk):
     
     def on_progress(self, stream=None, chunk=None, bytes_remaining=None):
         if stream:
+            self.button_download.configure(text="Baixando...")
             total_size = stream.filesize
             bytes_downloaded = total_size - bytes_remaining
 
             percentage_of_completion = bytes_downloaded / total_size * 100
-            per = str(int(percentage_of_completion))
+            per = round(percentage_of_completion)
             
-            self.text_progress_bar.configure(text=per + '%')
+            self.text_progress_bar.configure(text=f"{per}%")
             self.text_progress_bar.update()
             
             self.progress_bar.set(float(percentage_of_completion) / 100)
 
+    def on_complete(self, stream=None, chunk=None, bytes_remaining=None):
+        self.descrition_video.configure(text="Download Concluído!")
+        self.reset_botao()
+
+    
+    def progress_hook(self, d):
+        if d['status'] == 'downloading':
+            self.button_download.configure(text="Baixando...")
+            percentage_of_completion = round(float(d['downloaded_bytes'])/float(d['total_bytes'])*100,1)
+            
+            self.text_progress_bar.configure(text=f"{percentage_of_completion}%")
+            self.text_progress_bar.update()
+            
+            self.progress_bar.set(float(percentage_of_completion) / 100)
+
+        elif d['status'] == 'finished':
+            self.descrition_video.configure(text="Download Concluído!")
+            self.reset_botao()
+
+    def limpa_tela(self):
+        self.title_video.configure(text="")
+        self.descrition_video.configure(text="")
+        self.text_progress_bar.configure(text="")
+        self.progress_bar.set(0)
+
+    def reset_botao(self):
+        self.button_download.configure(text="Baixar | Fazer Download")
+        self.button_download.configure(state="normal")
+
     def command_download(self):
         entry_text, option_selected, path_download = self.entry_bar_url.get(), self.option_selected.get(), self.entry_path_download.get()
 
+        self.limpa_tela()
         if len(entry_text) > 0:
+            self.button_download.configure(text="Carregando...")
+            self.button_download.configure(state="disabled")
             try:
-                video = Baixar_Youtube(entry_text, path_download, option_selected)
 
-                if option_selected != "playlist":
-                    self.download_thread_video(video)
+                video = Baixar_Youtube(entry_text, path_download, option_selected, self.progress_hook)
+                
+                if option_selected == "mp3":
+                    self.download_thread_music(video)
 
-                else:
+                elif option_selected == "playlist":
                     self.download_thread_playlist(video)
+
+                elif option_selected == "mp4":
+                    self.download_thread_video(video)
 
             except Exception as e:
                 self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
         else:
             self.title_video.configure(text=f"Insira uma URL!", text_color="red", font=('Helvatical bold',20))
 
-    def download_thread_video(self, video):
-        self.button_download.configure(state="disabled")
 
+    def download_thread_video(self, video):
         self.thread = threading.Thread(target=self.download_video, args=(video,))
         self.thread.start()
 
-        self.after(100, self.check_thread) 
+    def download_thread_music(self, music):
+        self.thread = threading.Thread(target=self.download_music, args=(music,))
+        self.thread.start()
 
     def download_thread_playlist(self, playlist):
-        self.button_download.configure(state="disabled")
-
         self.thread = threading.Thread(target=self.download_video_playlist, args=(playlist,))
         self.thread.start()
 
-        self.after(100, self.check_thread) 
-
-    def check_thread(self):
-        if self.thread.is_alive():
-            self.button_download.configure(text="Baixando...")
-            self.after(100, self.check_thread)  # Check again after 100ms
-        else:
-            self.descrition_video.configure(text="Download Concluído!")
-            self.button_download.configure(text="Baixar | Fazer Download")
-            self.button_download.configure(state="normal")  
-
     def download_video(self, video):
-        video._video.register_on_progress_callback(self.on_progress)
-        self.title_video.configure(text=video.title, text_color="white")
+        try:
+            self.title_video.configure(text=video.title, text_color="white")
 
-        video_thumbnail = loadThumbnail(video.thumbnail)
-        self.image_video.configure(image=video_thumbnail)
+            video_thumbnail = loadThumbnail(video.thumbnail)
+            self.image_video.configure(image=video_thumbnail)
+            video._video.download([self.entry_bar_url.get()])
 
-        video.download()
+        except Exception as e:
+            self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
+
+        finally:
+            self.reset_botao()
+
+    def download_music(self, music):
+        try:
+            music._video.register_on_progress_callback(self.on_progress)
+            music._video.register_on_complete_callback(self.on_complete)
+
+            self.title_video.configure(text=music.title, text_color="white")
+
+            video_thumbnail = loadThumbnail(music.thumbnail)
+            self.image_video.configure(image=video_thumbnail)
+
+            music.download()
+        except Exception as e:
+            self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
+            
+        finally:
+            self.reset_botao()
 
     def download_video_playlist(self, playlist):
         path_download = self.entry_path_download.get()
-
+        
         try:
             self.title_video.configure(text=playlist.title, text_color="white")
 
@@ -147,11 +194,12 @@ class App(customtkinter.CTk):
                 self.text_progress_bar.configure(text="0%")
                 self.progress_bar.set(0)
 
-                self.descrition_video.configure(text=f"[ {idx + 1} de {len(videos) + 1} ]\n{video.title}")
+                self.descrition_video.configure(text=f"[ {idx + 1} de {len(videos)}]\n{video.title}")
                 video_thumbnail = loadThumbnail(video.thumbnail_url)
                 self.image_video.configure(image=video_thumbnail)
                 
                 video.register_on_progress_callback(self.on_progress)
+                video.register_on_complete_callback(self.on_complete)
                 video = video.streams.filter(only_audio=True).first()
 
                 download_file = video.download(path_download)
@@ -159,3 +207,6 @@ class App(customtkinter.CTk):
 
         except Exception as e:
             self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
+
+        finally:
+            self.reset_botao()

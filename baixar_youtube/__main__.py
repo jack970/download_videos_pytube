@@ -1,45 +1,62 @@
 from pytube import YouTube, Playlist, exceptions as PytubeExceptions
+from yt_dlp import YoutubeDL
 import os
 
-class ExceptionNotFoundMethod(Exception):
-	pass
-
 class Baixar_Youtube:
-	def __init__(self, url, destination, method):
+	def __init__(self, url, destination, method, progress_hook):
 		self.url = url
 		self.destination = destination
 		self.method = method
+		self.progress_hook = progress_hook
 
 		self._video = None
 		self._playlist = None
 
 		self.methods = {
-			"mp3": self.mp3_mp4, 
-			"mp4": self.mp3_mp4, 
-			"playlist": self.playlist}
+			"mp3": self.mp3, 
+			"mp4": self.mp4,
+			"playlist": self.playlist
+		}
+
+		self.ydl_options = {
+			'quiet': True,
+			'progress_hooks': [self.progress_hook],
+			'noprogress': True,
+			'outtmpl': os.path.join(self.destination, '%(title)s.%(ext)s'),  # Specify the download path
+		}
 		
 		if method in self.methods:
 			metodo = self.methods[method]
 			self.resultado = metodo()
 		else:
-			raise ExceptionNotFoundMethod("Método não encontrado!")
+			raise Exception("Método não encontrado!")
 		
 	@property
 	def title(self):
 		try:
-			if self._video:
+			if self._video and self.method == "mp3":
 				return self._video.title
+			
+			elif self._video and self.method == "mp4":
+				info = self.mp4_info()
+				if info:
+					return info.get("title")
 					
 			elif self._playlist:
 				return self._playlist.title
 		
 		except Exception as e:
-			raise Exception(f"Ocorreu um erro {e}")
+			raise Exception(e)
 	
 	@property
 	def thumbnail(self):
-		if self._video:
+		if self._video and self.method == "mp3":
 			return self._video.thumbnail_url
+		
+		elif self._video and self.method == "mp4":
+			info = self.mp4_info()
+			if info:
+				return info.get("thumbnail")
 
 	def transform_mp3(self, downloaded_file):
 		base, ext = os.path.splitext(downloaded_file)
@@ -47,7 +64,7 @@ class Baixar_Youtube:
 		os.rename(downloaded_file, new_file)		
 		return new_file.split('/')[-1]
 	
-	def mp3_mp4(self):
+	def mp3(self):
 		try:
 			self._video = YouTube(self.url)
 		
@@ -62,13 +79,24 @@ class Baixar_Youtube:
 		
 		except Exception as e:
 			raise Exception(e)
+		
+	def mp4(self):
+		try:
+			self._video = YoutubeDL(self.ydl_options)
+
+		except Exception as e:
+			raise Exception(f"Ocorreu um erro {e}")
+		
+	def mp4_info(self):
+		if self._video:
+			return self._video.extract_info(self.url, download=False)
 			
 	def playlist(self):
 		try:
 			self._playlist = Playlist(self.url)
-
+			
 		except Exception as e:
-			raise Exception(f'Ocorreu um erro {e}')
+			raise Exception(e)
 
 	def download(self):
 		if self._video:
@@ -81,13 +109,6 @@ class Baixar_Youtube:
 					video_downloaded = video.download(self.destination)
 					video_title = self.transform_mp3(video_downloaded)
 					print(f"Baixado {video_title} com sucesso em {self.destination}") 
-			
-			elif self.method == "mp4":
-				video = self._video.streams.get_highest_resolution()
-
-				if video:
-					video.download(self.destination)
-					print(f"Baixado {self._video.title} com sucesso em {self.destination}") 
 
 
 # import os
