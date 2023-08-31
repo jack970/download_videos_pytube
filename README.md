@@ -15,8 +15,16 @@ Está é a primeira versão do programa executável Youtube Downloader. Este Pro
 
 ---
 
+### 🛠 Tecnologias usadas:
+
+- pytube
+- yt_dlp
+- custom_tkinter
+- Pillow
+- pyinstaller
+
 ### Detalhes da Versão
 
-- **Nome da Versão:** YouTube Downloader v1.0.1
+- **Nome da Versão:** YouTube Downloader v1.1.0
 - **Data da Release:** 29 de Agosto de 2023
 - **Autor:** jack970
