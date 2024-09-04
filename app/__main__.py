@@ -38,11 +38,11 @@ class App(customtkinter.CTk):
 
         self.grid_columnconfigure(1, weight=1)
 
-        self.options = {"MP3": "mp3", "MP4": "mp4", "Playlist": "playlist"}
+        self.options = ["mp3", "mp4", "playlist"]
 
         self.option_selected = customtkinter.StringVar(value="mp4")
-        for idx, (key, value)  in enumerate(self.options.items()):
-            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=key, value=value, variable=self.option_selected)
+        for idx, (value) in enumerate(self.options):
+            self.radiobutton_frame = customtkinter.CTkRadioButton(self, text=value.upper(), value=value, variable=self.option_selected)
             self.radiobutton_frame.grid(row=3, column=idx + 1, padx=(20, 20), pady=(10, 0), sticky="n")
         
         self.image_video = customtkinter.CTkLabel(self, text="", image=self.logo_image)
@@ -93,12 +93,14 @@ class App(customtkinter.CTk):
     def progress_hook(self, d):
         if d['status'] == 'downloading':
             self.button_download.configure(text="Baixando...")
-            percentage_of_completion = round(float(d['downloaded_bytes'])/float(d['total_bytes'])*100,1)
-            
-            self.text_progress_bar.configure(text=f"{percentage_of_completion}%")
-            self.text_progress_bar.update()
-            
-            self.progress_bar.set(float(percentage_of_completion) / 100)
+
+            if 'downloaded_bytes' in d and 'total_bytes' in d:
+                percentage_of_completion = round(float(d['downloaded_bytes'])/float(d['total_bytes'])*100,1)
+                
+                self.text_progress_bar.configure(text=f"{percentage_of_completion}%")
+                self.text_progress_bar.update()
+                
+                self.progress_bar.set(float(percentage_of_completion) / 100)
 
         elif d['status'] == 'finished':
             self.descrition_video.configure(text="Download Concluído!")
@@ -123,33 +125,16 @@ class App(customtkinter.CTk):
             self.button_download.configure(state="disabled")
             try:
 
-                video = Baixar_Youtube(entry_text, path_download, option_selected, self.progress_hook)
-                
-                if option_selected == "mp3":
-                    self.download_thread_music(video)
-
-                elif option_selected == "playlist":
-                    self.download_thread_playlist(video)
-
-                elif option_selected == "mp4":
-                    self.download_thread_video(video)
+                video = Baixar_Youtube(entry_text, path_download, option_selected, progress_hook=self.progress_hook)
+                self.download_thread(video)
 
             except Exception as e:
                 self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")
         else:
             self.title_video.configure(text=f"Insira uma URL!", text_color="red", font=('Helvatical bold',20))
 
-
-    def download_thread_video(self, video):
+    def download_thread(self, video):
         self.thread = threading.Thread(target=self.download_video, args=(video,))
-        self.thread.start()
-
-    def download_thread_music(self, music):
-        self.thread = threading.Thread(target=self.download_music, args=(music,))
-        self.thread.start()
-
-    def download_thread_playlist(self, playlist):
-        self.thread = threading.Thread(target=self.download_video_playlist, args=(playlist,))
         self.thread.start()
 
     def download_video(self, video):
@@ -158,7 +143,7 @@ class App(customtkinter.CTk):
 
             video_thumbnail = loadThumbnail(video.thumbnail)
             self.image_video.configure(image=video_thumbnail)
-            video._video.download([self.entry_bar_url.get()])
+            video.download()
 
         except Exception as e:
             self.title_video.configure(text=f"Ocorreu um erro:\n{e}", text_color="red")

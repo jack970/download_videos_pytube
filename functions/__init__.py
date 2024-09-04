@@ -1,1 +1,1 @@
-from .__main__ import LOGO, ICON, loadThumbnail
+from .__main__ import LOGO, ICON, LOCATION_FFMPEG, loadThumbnail

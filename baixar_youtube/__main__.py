@@ -1,44 +1,29 @@
-from pytube import YouTube, Playlist, exceptions as PytubeExceptions
 from yt_dlp import YoutubeDL
+from functions import LOCATION_FFMPEG
 import os
 
 class Baixar_Youtube:
-	def __init__(self, url, destination, method, progress_hook):
+	def __init__(self, url, destination, method, progress_hook=None):
 		self.url = url
 		self.destination = destination
 		self.method = method
+		self.codec = self.method
 		self.progress_hook = progress_hook
 
 		self._video = None
 		self._playlist = None
 
-		self.methods = {
-			"mp3": self.mp3, 
-			"mp4": self.mp4,
-			"playlist": self.playlist
-		}
+		if method not in ["mp3", "mp4", "playlist"]:
+			raise ValueError("Formato Inválido!")
+			
+		self.set_video()
 
-		self.ydl_options = {
-			'quiet': True,
-			'progress_hooks': [self.progress_hook],
-			'noprogress': True,
-			'outtmpl': os.path.join(self.destination, '%(title)s.%(ext)s'),  # Specify the download path
-		}
-		
-		if method in self.methods:
-			metodo = self.methods[method]
-			self.resultado = metodo()
-		else:
-			raise Exception("Método não encontrado!")
 		
 	@property
 	def title(self):
 		try:
-			if self._video and self.method == "mp3":
-				return self._video.title
-			
-			elif self._video and self.method == "mp4":
-				info = self.mp4_info()
+			if self._video:
+				info = self.video_info()
 				if info:
 					return info.get("title")
 					
@@ -50,70 +35,66 @@ class Baixar_Youtube:
 	
 	@property
 	def thumbnail(self):
-		if self._video and self.method == "mp3":
-			return self._video.thumbnail_url
+		info = self.video_info()
+		if info:
+			return info.get("thumbnail")
 		
-		elif self._video and self.method == "mp4":
-			info = self.mp4_info()
-			if info:
-				return info.get("thumbnail")
+	@property
+	def listar_formatos(self):
+		info = self.video_info()
+		if info:
+			return info.get("formats", [])
+			
+	def _load_default_options(self, codec='mp3'):
+		if (codec == 'mp3'):
+			formato = 'bestaudio'
+			out = f'%(title)s.mp3'
+		else:
+			formato = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]'
+			out = f'%(title)s.%(ext)s'
 
-	def transform_mp3(self, downloaded_file):
-		base, ext = os.path.splitext(downloaded_file)
-		new_file = base + '.mp3'
-		os.rename(downloaded_file, new_file)		
-		return new_file.split('/')[-1]
-	
-	def mp3(self):
+		return {
+			'format': formato,
+			'extract_audio': True,
+			'ffmpeg_location': LOCATION_FFMPEG,
+			'progress_hooks': [self.progress_hook],
+			'noprogress': True,
+			'outtmpl': os.path.join(self.destination, out),  # Specify the download path
+			'quiet': True
+		}
+
+	def set_video(self):
 		try:
-			self._video = YouTube(self.url)
-		
-		except PytubeExceptions.RegexMatchError:
-			raise Exception(f"Erro no formato da URL:\n{self.url}")
-		
-		except PytubeExceptions.ExtractError:
-			raise Exception(f"Um erro de Extração ocorreu com o vídeo:\n{self.url}")
-		
-		except PytubeExceptions.VideoUnavailable:
-			raise Exception(f"O Vídeo está indisponível:\n{self.url}")
-		
-		except Exception as e:
-			raise Exception(e)
-		
-	def mp4(self):
-		try:
-			self._video = YoutubeDL(self.ydl_options)
+			load_default_options = self._load_default_options(codec=self.codec)
+			self._video = YoutubeDL(load_default_options)
 
 		except Exception as e:
 			raise Exception(f"Ocorreu um erro {e}")
 		
-	def mp4_info(self):
+	def video_info(self):
 		if self._video:
 			return self._video.extract_info(self.url, download=False)
-			
-	def playlist(self):
-		try:
-			self._playlist = Playlist(self.url)
-			
-		except Exception as e:
-			raise Exception(e)
 
 	def download(self):
 		if self._video:
-			if self.method == "mp3":
-				print(f"Download Iniciado: {self.title}")
-
-				video = self._video.streams.filter(only_audio=True).first()
-
-				if video:
-					video_downloaded = video.download(self.destination)
-					video_title = self.transform_mp3(video_downloaded)
-					print(f"Baixado {video_title} com sucesso em {self.destination}") 
+			print(f"Download Iniciado: {self.title}")
+			self._video.download([self.url])
+	
 
 
 # import os
 
 # url = input("Digite uma URL: ")
 
-# video = Baixar_Youtube(url, os.getcwd(), "mp3")
-# print(video.title)
+# video = Baixar_Youtube(url, os.getcwd(), "playlist")
+# print(video.get_info_playlist())
+# formats = video.listar_formatos 
+# for f in formats:
+# 	format_id = f.get('format_id', 'N/A')
+# 	format_note = f.get('format_note', 'N/A')
+# 	ext = f.get('ext', 'N/A')
+# 	resolution = f.get('resolution', 'N/A')
+# 	print(f"Format ID: {format_id}, Note: {format_note}, Extension: {ext}, Resolution: {resolution}")
+
+# path = os.path.join('..', os.getcwd(), "ffmpeg.exe")
+# print(path)
