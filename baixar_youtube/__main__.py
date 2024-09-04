@@ -16,7 +16,7 @@ class Baixar_Youtube:
 		if method not in ["mp3", "mp4", "playlist"]:
 			raise ValueError("Formato Inválido!")
 			
-		self.set_video()
+		self._set_video()
 
 		
 	@property
@@ -46,24 +46,28 @@ class Baixar_Youtube:
 			return info.get("formats", [])
 			
 	def _load_default_options(self, codec='mp3'):
-		if (codec == 'mp3'):
-			formato = 'bestaudio'
-			out = f'%(title)s.mp3'
-		else:
-			formato = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]'
-			out = f'%(title)s.%(ext)s'
+		config = {
+			'mp3': {
+				'format':'bestaudio',
+				'out': f'%(title)s.mp3'
+			},
+			'mp4': {
+				'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+				'out': '%(title)s.%(ext)s'
+			}
+		}
 
+		option_selected = config.get(codec)
 		return {
-			'format': formato,
-			'extract_audio': True,
+			'format': option_selected['format'],
 			'ffmpeg_location': LOCATION_FFMPEG,
 			'progress_hooks': [self.progress_hook],
 			'noprogress': True,
-			'outtmpl': os.path.join(self.destination, out),  # Specify the download path
+			'outtmpl': os.path.join(self.destination, option_selected['out']),  # Specify the download path
 			'quiet': True
 		}
 
-	def set_video(self):
+	def _set_video(self):
 		try:
 			load_default_options = self._load_default_options(codec=self.codec)
 			self._video = YoutubeDL(load_default_options)

@@ -5,6 +5,8 @@
 O programa desenvolvido em Python oferece uma solução abrangente para o download de vídeos, playlists e músicas do YouTube onde é possível selecionar a pasta de download.
 
 ---
+## Requisito:
+- É necessario 7zip instalado no windows
 
 ### Com ele é possível :
 
